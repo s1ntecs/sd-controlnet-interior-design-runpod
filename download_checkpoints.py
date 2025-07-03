@@ -114,7 +114,7 @@ def get_pipeline():
             torch_dtype=torch.float16,
         )
     StableDiffusionImg2ImgPipeline.from_pretrained(
-        "stabilityai/stable-diffusion-1-5",
+        "stable-diffusion-v1-5/stable-diffusion-v1-5",
         torch_dtype=torch.float16,
         safety_checker=None,
     )
@@ -123,8 +123,6 @@ def get_pipeline():
         pipe.scheduler.config
     )
 
-    # pipe.enable_xformers_memory_efficient_attention()
-    # pipe = pipe.to(DEVICE)
     AutoImageProcessor.from_pretrained(
         "nvidia/segformer-b5-finetuned-ade-640-640"
     )
