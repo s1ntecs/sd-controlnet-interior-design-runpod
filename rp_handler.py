@@ -7,7 +7,8 @@ from typing import Any, Dict, Tuple, Union, List, Optional
 import numpy as np
 import torch
 from PIL import Image, ImageFilter
-from diffusers import StableDiffusionUpscalePipeline
+from diffusers import (StableDiffusionImg2ImgPipeline,
+                       DDIMScheduler)
 
 from diffusers.pipelines.controlnet import \
     StableDiffusionControlNetInpaintPipeline
@@ -142,12 +143,15 @@ PIPELINE.scheduler = UniPCMultistepScheduler.from_config(
 PIPELINE.enable_xformers_memory_efficient_attention()
 PIPELINE.to(DEVICE)
 
-UPSCALER = StableDiffusionUpscalePipeline.from_pretrained(
-    "stabilityai/stable-diffusion-x4-upscaler",
-    variant="fp16",
-    torch_dtype=torch.float16,
+REFINER = StableDiffusionImg2ImgPipeline.from_pretrained(
+    "stabilityai/stable-diffusion-1-5",
+    torch_dtype=DTYPE,
+    safety_checker=None,
 )
-UPSCALER = UPSCALER.to(DEVICE)
+REFINER.scheduler = DDIMScheduler.from_config(REFINER.scheduler.config)
+REFINER.enable_attention_slicing()
+REFINER.enable_sequential_cpu_offload()
+REFINER.to(DEVICE)
 
 
 control_items = [
@@ -317,10 +321,9 @@ def handler(job: Dict[str, Any]) -> Dict[str, Any]:
         seed = int(payload.get("seed", DEFAULT_SEED))
         generator = torch.Generator(device=DEVICE).manual_seed(seed)
 
-        upscale_noise_level = float(payload.get("upscale_noise_level", 15))
-        upscale_steps = int(payload.get("upscale_steps", 40))
-        upscale_guidance_scale = float(payload.get("upscale_guidance_scale", 7.5))
-        upscale_prompt = payload.get("upscale_prompt", "")
+        refiner_strength = float(payload.get("refiner_strength", 0.2))
+        refiner_steps = int(payload.get("refiner_steps", 15))
+        refiner_scale = float(payload.get("refiner_scale", 7.5))
 
         segment_conditioning_scale = float(payload.get("segment_conditioning_scale", 0.4))
         segment_guidance_start = float(payload.get("segment_guidance_start", 0.0))
@@ -395,12 +398,12 @@ def handler(job: Dict[str, Any]) -> Dict[str, Any]:
         # масштабируем каждую картинку
         torch.cuda.empty_cache()
         for img in done_images:
-            ups = UPSCALER(
-                prompt=upscale_prompt,
+            ups = REFINER(
+                prompt=prompt,
                 image=img,
-                num_inference_steps=upscale_steps,
-                guidance_scale=upscale_guidance_scale,
-                noise_level=upscale_noise_level,
+                strength=refiner_strength,
+                num_inference_steps=refiner_steps,
+                guidance_scale=refiner_scale,
             ).images[0]
             final_images.append(ups)
 

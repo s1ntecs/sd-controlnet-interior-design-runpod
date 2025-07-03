@@ -1,11 +1,13 @@
 # download_checkpoints.py  (offline-build)
 
 import os
+import subprocess
+import time
 import torch
 
 from diffusers.pipelines.controlnet import \
     StableDiffusionControlNetInpaintPipeline
-from diffusers import StableDiffusionUpscalePipeline
+from diffusers import StableDiffusionImg2ImgPipeline
 
 
 from diffusers import ControlNetModel, UniPCMultistepScheduler
@@ -87,6 +89,14 @@ def fetch_checkpoints() -> None:
         )
 
 
+def download_weights(url, dest):
+    start = time.time()
+    print("downloading url: ", url)
+    print("downloading to: ", dest)
+    subprocess.check_call(["pget", "-x", url, dest], close_fds=False)
+    print("downloading took: ", time.time() - start)
+
+
 # ------------------------- пайплайн -------------------------
 def get_pipeline():
     controlnet = [
@@ -103,10 +113,10 @@ def get_pipeline():
             safety_checker=None,
             torch_dtype=torch.float16,
         )
-    upscale = StableDiffusionUpscalePipeline.from_pretrained(
-        "stabilityai/stable-diffusion-x4-upscaler",
-        variant="fp16",
+    StableDiffusionImg2ImgPipeline.from_pretrained(
+        "stabilityai/stable-diffusion-1-5",
         torch_dtype=torch.float16,
+        safety_checker=None,
     )
 
     pipe.scheduler = UniPCMultistepScheduler.from_config(
