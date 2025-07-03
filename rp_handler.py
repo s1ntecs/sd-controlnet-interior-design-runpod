@@ -144,7 +144,7 @@ PIPELINE.enable_xformers_memory_efficient_attention()
 PIPELINE.to(DEVICE)
 
 REFINER = StableDiffusionImg2ImgPipeline.from_pretrained(
-    "stabilityai/stable-diffusion-1-5",
+    "stable-diffusion-v1-5/stable-diffusion-v1-5",
     torch_dtype=DTYPE,
     safety_checker=None,
 )
