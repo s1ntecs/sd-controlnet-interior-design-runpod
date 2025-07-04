@@ -149,8 +149,8 @@ REFINER = StableDiffusionImg2ImgPipeline.from_pretrained(
     safety_checker=None,
 )
 REFINER.scheduler = DDIMScheduler.from_config(REFINER.scheduler.config)
-REFINER.enable_attention_slicing()
-REFINER.enable_sequential_cpu_offload()
+# REFINER.enable_attention_slicing()
+# REFINER.enable_sequential_cpu_offload()
 REFINER.to(DEVICE)
 
 
