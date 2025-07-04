@@ -235,7 +235,8 @@ def resize_dimensions(dimensions, target_size):
 # --------------------------------------------------------------------------- #
 #                           LOADING / UNLOADING LoRA                          #
 # --------------------------------------------------------------------------- #
-def _switch_lora(lora_name: Optional[str]) -> Optional[str]:
+def _switch_lora(lora_name: Optional[str],
+                 lora_scale: float) -> Optional[str]:
     """Load new LoRA or unload if lora_name is None. Return error str or None."""
     global CURRENT_LORA
 
@@ -265,7 +266,7 @@ def _switch_lora(lora_name: Optional[str]) -> Optional[str]:
         PIPELINE.load_lora_weights(f"{LORA_DIR}/{lora_name}",
                                    use_peft_backend=True)
         if hasattr(PIPELINE, "fuse_lora"):
-            PIPELINE.fuse_lora()
+            PIPELINE.fuse_lora(lora_scale=lora_scale)
 
         CURRENT_LORA = lora_name
         return None
@@ -303,11 +304,6 @@ def handler(job: Dict[str, Any]) -> Dict[str, Any]:
             return {"error": "'prompt' is required"}
         negative_prompt = payload.get("negative_prompt", "")
 
-        # ----------------- handle LoRA ----------------- #
-        error = _switch_lora(payload.get("lora"))
-        if error:
-            return {"error": error}
-
         # ----------------- parameters ------------------ #
         num_images = int(payload.get("num_images", 1))
         if num_images < 1 or num_images > 8:
@@ -333,6 +329,12 @@ def handler(job: Dict[str, Any]) -> Dict[str, Any]:
         mlsd_guidance_end = float(payload.get("mlsd_guidance_end", 0.25))
 
         mask_blur_radius = float(payload.get("mask_blur_radius", 3))
+
+         # ----------------- handle LoRA ----------------- #
+        error = _switch_lora(payload.get("lora"),
+                             payload.get("lora_scale", 1.0))
+        if error:
+            return {"error": error}
 
         image = url_to_pil(image_url)
         start = time.time()
