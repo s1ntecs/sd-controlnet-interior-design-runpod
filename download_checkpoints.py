@@ -108,11 +108,12 @@ def get_pipeline():
         ),
     ]
     pipe = StableDiffusionControlNetInpaintPipeline.from_pretrained(
-            "SG161222/Realistic_Vision_V3.0_VAE",
-            controlnet=controlnet,
-            safety_checker=None,
-            torch_dtype=torch.float16,
-        )
+        # "SG161222/Realistic_Vision_V3.0_VAE",
+        "hafsa000/interior-design",
+        controlnet=controlnet,
+        safety_checker=None,
+        torch_dtype=torch.float16,
+    )
     StableDiffusionImg2ImgPipeline.from_pretrained(
         "stable-diffusion-v1-5/stable-diffusion-v1-5",
         torch_dtype=torch.float16,
